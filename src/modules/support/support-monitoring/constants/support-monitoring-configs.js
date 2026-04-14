@@ -10,14 +10,14 @@ export const CATEGORY_CONFIGS = {
         chart: { type: "bar", labelField: "metricName", valueFromAttributes: "TotalErrors", xLabel: "Module", yLabel: "Total Errors", legendLabel: "Errors by Application Modules" },
         summaryColumns: [
             { field: 'metricName', header: 'Module' },
-            { field: 'TotalErrors', header: 'Total Errors' },
-            { field: 'LastErrorOccurredOn', header: 'Last Error Occurred On' },
+            { field: 'TotalErrors', header: 'Total Errors', sortable: true },
+            { field: 'LastErrorOccurredOn', header: 'Last Error Occurred On', sortable: true },
             { field: 'LastErrorMessage', header: 'Last Error Message' }
         ],
         detailColumns: [
             { field: 'Module', header: 'Module' },
-            { field: 'ErrorId', header: 'Error Log Id' },
-            { field: 'ErrorOccuredOn', header: 'Error Occurred On' },
+            { field: 'ErrorId', header: 'Error Log Id', sortable: true },
+            { field: 'ErrorOccuredOn', header: 'Error Occurred On', sortable: true  },
             { field: 'ErrorMessage', header: 'Error Message' }
         ]
     },
@@ -26,12 +26,12 @@ export const CATEGORY_CONFIGS = {
         hasChart: false,
         summaryLoaderFn: (req) => supportMonitoringService.GetATTSIMUsageImportSummary(req),
         summaryColumns: [
-            { field: 'metricName', header: 'File Name' },
-            { field: 'ProcessingStatus', header: 'Processing Status' },
-            { field: 'TotalUsageBeforeProcess', header: 'Total Usage Before Process' },
-            { field: 'TotalSIMBeforeProcess', header: 'Total SIM Before Process' },
-            { field: 'TotalUsageAfterProcess', header: 'Total Usage After Process' },
-            { field: 'TotalSIMAfterProcess', header: 'Total SIM After Process' }
+            { field: 'metricName', header: 'File Name', sortable: true },
+            { field: 'ProcessingStatus', header: 'Processing Status', sortable: true },
+            { field: 'TotalUsageBeforeProcess', header: 'Total Usage Before Process', sortable: true },
+            { field: 'TotalSIMBeforeProcess', header: 'Total SIM Before Process', sortable: true },
+            { field: 'TotalUsageAfterProcess', header: 'Total Usage After Process', sortable: true },
+            { field: 'TotalSIMAfterProcess', header: 'Total SIM After Process', sortable: true }
         ],
     },
     "B2B API Performance": {
@@ -40,12 +40,12 @@ export const CATEGORY_CONFIGS = {
         summaryLoaderFn: (req) => supportMonitoringService.getB2BApiPerformanceSummary(req),
         chart: { type: "bar", labelField: "metricName", valueFromAttributes: "AvgDurationInMs", xLabel: "API Name", yLabel: "Average Duration" },
         summaryColumns: [
-            { field: 'metricName', header: 'API Name' },
-            { field: 'TotalRequests', header: 'Total Requests' },
-            { field: 'AvgDurationInMs', header: 'Avg Duration (ms)' },
-            { field: 'MinExecutionInMs', header: 'Min Execution (ms)' },
-            { field: 'MaxExecutionInMs', header: 'Max Execution (ms)' },
-            { field: 'MaxExecutionOccurredOn', header: 'Max Execution Occurred On' }
+            { field: 'metricName', header: 'API Name', sortable: true },
+            { field: 'TotalRequests', header: 'Total Requests', sortable: true },
+            { field: 'AvgDurationInMs', header: 'Avg Duration (ms)', sortable: true },
+            { field: 'MinExecutionInMs', header: 'Min Execution (ms)', sortable: true },
+            { field: 'MaxExecutionInMs', header: 'Max Execution (ms)', sortable: true },
+            { field: 'MaxExecutionOccurredOn', header: 'Max Execution Occurred On', sortable: true }
         ],
     },
     "B2B Errors": {
@@ -56,8 +56,8 @@ export const CATEGORY_CONFIGS = {
         chart: { type: "bar", labelField: "metricName", valueFromAttributes: "TotalErrors", xLabel: "B2B API Name", yLabel: "Total Errors" },
         summaryColumns: [
             { field: 'metricName', header: 'B2B API Name' },
-            { field: 'TotalErrors', header: 'Total Errors' },
-            { field: 'LastErrorOccurredOn', header: 'Last Error Occurred On' },
+            { field: 'TotalErrors', header: 'Total Errors', sortable: true },
+            { field: 'LastErrorOccurredOn', header: 'Last Error Occurred On', sortable: true },
             { field: 'LastErrorMessage', header: 'Last Error Message' },
         ],
         detailColumns: [
@@ -231,16 +231,16 @@ export const CATEGORY_CONFIGS = {
         detailLoaderFn: (req, subCategory) => supportMonitoringService.getTicketDetails({ ...req, ticketCategoryName: subCategory }),
         chart: { type: "bar", labelField: "metricName", stackedFields: ["Open", "InProgress"], xLabel: "Ticket Type", yLabel: "Count by Status", legendLabel: "Tickets By Category" },
         summaryColumns: [
-            { field: 'metricName', header: 'Ticket Type' },
-            { field: 'Total', header: 'Total' },
-            { field: 'Open', header: 'Open' },
-            { field: 'InProgress', header: 'In Progress' }
+            { field: 'metricName', header: 'Ticket Type', sortable: true },
+            { field: 'Total', header: 'Total', sortable: true },
+            { field: 'Open', header: 'Open', sortable: true },
+            { field: 'InProgress', header: 'In Progress', sortable: true }
         ],
         detailColumns: [
-            { field: 'TicketId', header: 'Ticket Id' },
+            { field: 'TicketId', header: 'Ticket Id', sortable: true },
             { field: 'TicketStatusName', header: 'Status' },
-            { field: 'TicketCategory', header: 'Category' },
-            { field: 'CreatedOn', header: 'Created On' }
+            { field: 'TicketCategory', header: 'Category', sortable: true },
+            { field: 'CreatedOn', header: 'Created On', sortable: true }
         ]
     },
     "Verizon SIM Usage Import": {
@@ -248,14 +248,14 @@ export const CATEGORY_CONFIGS = {
         hasChart: false,
         summaryColumns: [
             { field: 'metricName', header: 'Callback Request Id' },
-            { field: 'StartDate', header: 'Start Date' },
-            { field: 'EndDate', header: 'End Date' },
-            { field: 'ProcessingStatus', header: 'Processing Status' },
-            { field: 'TotalCallbackResponseCount', header: 'Total Callback Responses' },
-            { field: 'TotalUsageBeforeProcessing', header: 'Total Usage Before Processing' },
-            { field: 'TotalUsageAfterProcessing', header: 'Total Usage After Processing' },
-            { field: 'TotalSIMBeforeProcessing', header: 'Total SIMs Before Processing' },
-            { field: 'TotalSIMAfterProcessing', header: 'Total SIMs After Processing' }
+            { field: 'StartDate', header: 'Start Date', sortable: true },
+            { field: 'EndDate', header: 'End Date', sortable: true },
+            { field: 'ProcessingStatus', header: 'Processing Status', sortable: true },
+            { field: 'TotalCallbackResponseCount', header: 'Total Callback Responses', sortable: true },
+            { field: 'TotalUsageBeforeProcessing', header: 'Total Usage Before Processing', sortable: true },
+            { field: 'TotalUsageAfterProcessing', header: 'Total Usage After Processing', sortable: true },
+            { field: 'TotalSIMBeforeProcessing', header: 'Total SIMs Before Processing', sortable: true },
+            { field: 'TotalSIMAfterProcessing', header: 'Total SIMs After Processing', sortable: true }
         ],
     },
     "Webhooks": {
@@ -264,10 +264,10 @@ export const CATEGORY_CONFIGS = {
         chart: { type: "bar", labelField: "metricName", valueFromAttributes: "TotalErrors", xLabel: "Webhook Name", yLabel: "Total Errors" },
         hasChart: true,
         summaryColumns: [
-            { field: 'metricName', header: 'Webhook Name' },
-            { field: 'TotalErrors', header: 'Total Errors' },
-            { field: 'LastErrorOccurredOn', header: 'Last Error Occurred On' },
-            { field: 'LastErrorMessage', header: 'Last Error Message' },
+            { field: 'metricName', header: 'Webhook Name', sortable: true },
+            { field: 'TotalErrors', header: 'Total Errors', sortable: true },
+            { field: 'LastErrorOccurredOn', header: 'Last Error Occurred On', sortable: true },
+            { field: 'LastErrorMessage', header: 'Last Error Message', sortable: true },
         ],
     },
     "Workflows": {
@@ -279,9 +279,9 @@ export const CATEGORY_CONFIGS = {
         chart: { type: "bar", labelField: "metricName", stackedFields: ["Pending", "Failed"], xLabel: "Workflow", yLabel: "Count by Status" },
         summaryColumns: [
             { field: 'metricName', header: 'Workflow' },
-            { field: 'Total', header: 'Total' },
-            { field: 'Pending', header: 'Pending' },
-            { field: 'Failed', header: 'Failed' }
+            { field: 'Total', header: 'Total', sortable: true },
+            { field: 'Pending', header: 'Pending', sortable: true },
+            { field: 'Failed', header: 'Failed', sortable: true }
         ],
         detailColumns: [
             { field: 'Workflow', header: 'Workflow', sortable: false, sortOrder: 0 },

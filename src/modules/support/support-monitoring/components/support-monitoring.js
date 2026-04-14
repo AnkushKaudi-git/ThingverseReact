@@ -63,7 +63,7 @@ const CategoryChart = ({ data, config }) => {
             }));
         } else if (config.valueFromAttributes) {
             datasets = [{
-                label: config.yLabel,
+                label: config.legendLabel || config.yLabel,
                 data: data.map(row => Number(row[config.valueFromAttributes] || 0)),
                 backgroundColor: "#5d4e99",
                 maxBarThickness: MAX_BAR_WIDTH
@@ -79,7 +79,6 @@ const CategoryChart = ({ data, config }) => {
                 scales: {
                     x: {
                         stacked: !!config.stackedFields, title: { display: true, text: config.xLabel }, ticks: {
-                            // Truncate long labels to 15 chars + '...'
                             callback: function (value) {
                                 const label = this.getLabelForValue(value);
                                 if (typeof label === 'string' && label.length > 10) {
@@ -104,16 +103,25 @@ const CategoryChart = ({ data, config }) => {
     );
 };
 
+// --- HELPER COMPONENT FOR SORT ICON ---
+const SortIcon = ({ sortColumn, sortOrder, field }) => {
+    if (sortColumn !== field || !sortOrder) {
+        return <span style={{ color: '#ccc', marginLeft: '6px', fontSize: '13px' }}>⇅</span>;
+    }
+    return (
+        <span style={{ color: '#5d4e99', marginLeft: '6px', fontSize: '14px', fontWeight: 'bold' }}>
+            {sortOrder === 'asc' ? '↑' : '↓'}
+        </span>
+    );
+};
+
 function SupportMonitoring() {
-    // Date filter states
     const [startDate, setStartDate] = useState(getTodayString());
     const [endDate, setEndDate] = useState(getTodayString());
 
-    // Support Monitoring Tabs and active tab state
     const [tabs, setTabs] = useState([]);
     const [activeTab, setActiveTab] = useState(null);
 
-    // Loading state
     const [isLoading, setIsLoading] = useState(false);
     const [isDetailLoading, setIsDetailLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -122,8 +130,10 @@ function SupportMonitoring() {
     const [summaryData, setSummaryData] = useState([]);
     const [summaryTotal, setSummaryTotal] = useState(0);
     const [summaryPage, setSummaryPage] = useState(0);
-    const [summaryPageSize] = useState(10); // Smaller size for side-by-side as per image
+    const [summaryPageSize] = useState(10); 
     const [summarySearchInput, setSummarySearchInput] = useState('');
+    const [summarySortCol, setSummarySortCol] = useState('');
+    const [summarySortOrder, setSummarySortOrder] = useState('');
 
     // --- DETAIL STATE ---
     const [selectedSubCategory, setSelectedSubCategory] = useState(null);
@@ -132,6 +142,8 @@ function SupportMonitoring() {
     const [detailPage, setDetailPage] = useState(0);
     const [detailPageSize] = useState(10);
     const [detailSearchInput, setDetailSearchInput] = useState('');
+    const [detailSortCol, setDetailSortCol] = useState('');
+    const [detailSortOrder, setDetailSortOrder] = useState('');
 
     const flattenRowAttributes = (rows) => {
         return rows.map(row => {
@@ -155,7 +167,7 @@ function SupportMonitoring() {
 
             const data = await getSupportMonitoringTabs(payload);
             setTabs(data);
-            return data; // Return data so callers can use it to set the active tab
+            return data;
         } catch (err) {
             console.error("Error fetching support monitoring tabs: ", err);
             setError("Failed to load support monitoring tabs. Please try again.");
@@ -170,8 +182,10 @@ function SupportMonitoring() {
         setSelectedSubCategory(null);
         setSummaryData([]);
         setSummarySearchInput('');
+        setSummarySortCol('');
+        setSummarySortOrder('');
 
-        await fetchSummary(categoryName, 0, '');
+        await fetchSummary(categoryName, 0, '', '', '');
     };
 
     const handleMasterRowClick = async (row) => {
@@ -181,10 +195,11 @@ function SupportMonitoring() {
         if (!config || config.viewType !== 'master-detail' || !config.detailLoaderFn) return;
 
         setSelectedSubCategory(row.metricName);
-        setDetailSearchInput(''); // Clear out any old search terms when opening a new detail view
+        setDetailSearchInput(''); 
+        setDetailSortCol('');
+        setDetailSortOrder('');
 
-        // Let fetchDetail handle the API call, payload formatting, and all pagination states
-        await fetchDetail(row.metricName, 0, '');
+        await fetchDetail(row.metricName, 0, '', '', '');
     };
 
     const activeCategoryName = activeTab !== null ? tabs[activeTab].category : null;
@@ -192,18 +207,14 @@ function SupportMonitoring() {
 
     const fetchData = async () => {
         const data = await fetchSupportMonitoringTabs();
-
-        // Capture the currently selected category name before the state updates
         const currentCategory = activeTab !== null && tabs[activeTab] ? tabs[activeTab].category : null;
 
         if (data && data.length > 0) {
             if (currentCategory) {
-                // If a tab was already selected, find its index in the newly fetched tabs and reload it
                 const newIndex = data.findIndex(t => t.category === currentCategory);
-                const indexToSelect = newIndex !== -1 ? newIndex : 0; // Fallback to 0 if missing
+                const indexToSelect = newIndex !== -1 ? newIndex : 0; 
                 handleTabClick(data[indexToSelect].category, indexToSelect);
             } else {
-                // If no tab was selected (edge case), default to Application Errors
                 const defaultIndex = data.findIndex(t => t.category === "Application Errors");
                 const indexToSelect = defaultIndex !== -1 ? defaultIndex : 0;
                 handleTabClick(data[indexToSelect].category, indexToSelect);
@@ -216,32 +227,27 @@ function SupportMonitoring() {
             const data = await fetchSupportMonitoringTabs();
 
             if (data && data.length > 0) {
-                // Find "Application Errors" to set as default, fallback to 0 if it doesn't exist
                 const defaultIndex = data.findIndex(t => t.category === "Application Errors");
                 const indexToSelect = defaultIndex !== -1 ? defaultIndex : 0;
-
                 handleTabClick(data[indexToSelect].category, indexToSelect);
             }
         };
 
         loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const onStartDateChange = (date) => {
-        setStartDate(date);
-    }
-
-    const onEndDateChange = (date) => {
-        setEndDate(date);
-    }
-
+    const onStartDateChange = (date) => setStartDate(date);
+    const onEndDateChange = (date) => setEndDate(date);
+    
     const setToday = () => {
         const todayStr = getTodayString();
         setStartDate(todayStr);
         setEndDate(todayStr);
     }
 
-    const fetchSummary = async (categoryName, pageIdx, searchTxt) => {
+    // --- SUMMARY FETCH & SORT ---
+    const fetchSummary = async (categoryName, pageIdx, searchTxt, sortCol = summarySortCol, sortOrd = summarySortOrder) => {
         setIsLoading(true);
         setError(null);
         const config = CATEGORY_CONFIGS[categoryName];
@@ -255,21 +261,22 @@ function SupportMonitoring() {
             const payload = {
                 pageIndex: pageIdx,
                 pageSize: summaryPageSize,
-                sortColumn: '',
-                sortOrder: '',
+                sortColumn: sortCol,
+                sortOrder: sortOrd,
                 searchText: searchTxt,
                 startDate,
                 endDate
             };
             const res = await config.summaryLoaderFn(payload);
 
-            // Safely parse data and total count depending on your specific API response shape
             const dataArr = res.data ? (typeof res.data === 'string' ? JSON.parse(res.data) : res.data) : (Array.isArray(res) ? res : []);
             const total = res.totalRecords || res.totalRows || (dataArr[0] && dataArr[0].totalRows) || dataArr.length || 0;
 
             setSummaryData(flattenRowAttributes(dataArr));
             setSummaryTotal(total);
             setSummaryPage(pageIdx);
+            setSummarySortCol(sortCol);
+            setSummarySortOrder(sortOrd);
         } catch (err) {
             console.error(`Error fetching summary for ${categoryName}: `, err);
             setError(`Failed to load data.`);
@@ -278,7 +285,17 @@ function SupportMonitoring() {
         }
     };
 
-    const fetchDetail = async (subCategory, pageIdx, searchTxt) => {
+    const handleSummarySort = (field) => {
+        let newOrder = 'asc';
+        if (summarySortCol === field) {
+            if (summarySortOrder === 'asc') newOrder = 'desc';
+            else if (summarySortOrder === 'desc') newOrder = '';
+        }
+        fetchSummary(activeCategoryName, 0, summarySearchInput, field, newOrder);
+    };
+
+    // --- DETAIL FETCH & SORT ---
+    const fetchDetail = async (subCategory, pageIdx, searchTxt, sortCol = detailSortCol, sortOrd = detailSortOrder) => {
         const categoryName = tabs[activeTab].category;
         const config = CATEGORY_CONFIGS[categoryName];
         if (!config || !config.detailLoaderFn) return;
@@ -288,8 +305,8 @@ function SupportMonitoring() {
             const payload = {
                 pageIndex: pageIdx,
                 pageSize: detailPageSize,
-                sortColumn: '',
-                sortOrder: '',
+                sortColumn: sortCol,
+                sortOrder: sortOrd,
                 searchText: searchTxt,
                 startDate,
                 endDate
@@ -302,12 +319,24 @@ function SupportMonitoring() {
             setDetailData(flattenRowAttributes(dataArr));
             setDetailTotal(total);
             setDetailPage(pageIdx);
+            setDetailSortCol(sortCol);
+            setDetailSortOrder(sortOrd);
         } catch (err) {
             console.error(`Error fetching detail for ${subCategory}: `, err);
         } finally {
             setIsDetailLoading(false);
         }
     };
+
+    const handleDetailSort = (field) => {
+        let newOrder = 'asc';
+        if (detailSortCol === field) {
+            if (detailSortOrder === 'asc') newOrder = 'desc';
+            else if (detailSortOrder === 'desc') newOrder = '';
+        }
+        fetchDetail(selectedSubCategory, 0, detailSearchInput, field, newOrder);
+    };
+
 
     return (
         <div className="page-container">
@@ -316,20 +345,12 @@ function SupportMonitoring() {
 
                 <div className="date-input-group">
                     <label>Start Date</label>
-                    <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => onStartDateChange(e.target.value)}
-                    />
+                    <input type="date" value={startDate} onChange={(e) => onStartDateChange(e.target.value)} />
                 </div>
 
                 <div className="date-input-group">
                     <label>End Date</label>
-                    <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => onEndDateChange(e.target.value)}
-                    />
+                    <input type="date" value={endDate} onChange={(e) => onEndDateChange(e.target.value)} />
                 </div>
 
                 <button className="btn-solid" onClick={fetchData} disabled={isLoading}>
@@ -353,7 +374,6 @@ function SupportMonitoring() {
                     </div>
                 </Spinner>
                 <div className="content-area" style={{ padding: '0 20px', width: '100%' }}>
-                    {/* {error && <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>} */}
 
                     {!activeConfig && !isLoading && activeCategoryName && (
                         <p>No configuration defined for <strong>{activeCategoryName}</strong>.</p>
@@ -361,13 +381,8 @@ function SupportMonitoring() {
 
                     {activeConfig && (
                         <div className="category-view">
-
-                            {/* --- DYNAMIC LAYOUT FOR SUMMARY AND CHART --- */}
                             {(() => {
-                                // Determine if we should stack the layout (Chart top, Table bottom)
                                 const isStackedLayout = activeConfig.viewType !== 'master-detail' && activeConfig.hasChart;
-
-                                // Store the chart in a variable so we can easily place it before OR after the table
                                 const chartNode = (activeConfig.hasChart && summaryData.length > 0) ? (
                                     <div className="chart-container" style={isStackedLayout ? { width: '100%', flex: 'none', marginBottom: '40px' } : {}}>
                                         <h3 className="chart-title">{activeConfig.title || activeCategoryName}</h3>
@@ -378,10 +393,8 @@ function SupportMonitoring() {
                                 return (
                                     <div className={isStackedLayout ? "layout-stacked" : "layout-side-by-side"} style={isStackedLayout ? { display: 'flex', flexDirection: 'column' } : {}}>
 
-                                        {/* 1. If stacked, render the chart FIRST */}
                                         {isStackedLayout && chartNode}
 
-                                        {/* 2. ALWAYS render the summary table */}
                                         <div className="table-container" style={isStackedLayout ? { width: '100%', flex: 'none' } : {}}>
                                             <div className="table-controls">
                                                 <span className="record-count">Total Record(s): {summaryTotal}</span>
@@ -391,7 +404,7 @@ function SupportMonitoring() {
                                                         placeholder="Search..."
                                                         value={summarySearchInput}
                                                         onChange={(e) => setSummarySearchInput(e.target.value)}
-                                                        onKeyDown={(e) => e.key === 'Enter' && fetchSummary(activeCategoryName, 0, summarySearchInput)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && fetchSummary(activeCategoryName, 0, summarySearchInput, summarySortCol, summarySortOrder)}
                                                     />
                                                     <i className="search-icon">🔍</i>
                                                 </div>
@@ -404,7 +417,14 @@ function SupportMonitoring() {
                                                             <thead>
                                                                 <tr>
                                                                     {activeConfig.summaryColumns.map(col => (
-                                                                        <th key={col.field}>{col.header}</th>
+                                                                        <th 
+                                                                            key={col.field}
+                                                                            onClick={() => col.sortable ? handleSummarySort(col.field) : null}
+                                                                            style={{ cursor: col.sortable ? 'pointer' : 'default', userSelect: 'none' }}
+                                                                        >
+                                                                            {col.header}
+                                                                            {col.sortable && <SortIcon sortColumn={summarySortCol} sortOrder={summarySortOrder} field={col.field} />}
+                                                                        </th>
                                                                     ))}
                                                                 </tr>
                                                             </thead>
@@ -429,7 +449,7 @@ function SupportMonitoring() {
                                                         pageIndex={summaryPage}
                                                         pageSize={summaryPageSize}
                                                         totalRecords={summaryTotal}
-                                                        onPageChange={(newPage) => fetchSummary(activeCategoryName, newPage, summarySearchInput)}
+                                                        onPageChange={(newPage) => fetchSummary(activeCategoryName, newPage, summarySearchInput, summarySortCol, summarySortOrder)}
                                                     />
                                                 </>
                                             ) : (
@@ -437,7 +457,6 @@ function SupportMonitoring() {
                                             )}
                                         </div>
 
-                                        {/* 3. If side-by-side (like master-detail), render the chart SECOND */}
                                         {!isStackedLayout && chartNode}
                                     </div>
                                 );
@@ -454,7 +473,7 @@ function SupportMonitoring() {
                                                 placeholder="Search..."
                                                 value={detailSearchInput}
                                                 onChange={(e) => setDetailSearchInput(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && fetchDetail(selectedSubCategory, 0, detailSearchInput)}
+                                                onKeyDown={(e) => e.key === 'Enter' && fetchDetail(selectedSubCategory, 0, detailSearchInput, detailSortCol, detailSortOrder)}
                                             />
                                             <i className="search-icon">🔍</i>
                                         </div>
@@ -469,8 +488,13 @@ function SupportMonitoring() {
                                                     <thead>
                                                         <tr>
                                                             {activeConfig.detailColumns.map(col => (
-                                                                <th key={col.field}>
-                                                                    {col.header} <span style={{ color: '#999', fontSize: '10px', marginLeft: '5px' }}>↓↑</span>
+                                                                <th 
+                                                                    key={col.field}
+                                                                    onClick={() => col.sortable ? handleDetailSort(col.field) : null}
+                                                                    style={{ cursor: col.sortable ? 'pointer' : 'default', userSelect: 'none' }}
+                                                                >
+                                                                    {col.header}
+                                                                    {col.sortable && <SortIcon sortColumn={detailSortCol} sortOrder={detailSortOrder} field={col.field} />}
                                                                 </th>
                                                             ))}
                                                         </tr>
@@ -492,7 +516,7 @@ function SupportMonitoring() {
                                                 pageIndex={detailPage}
                                                 pageSize={detailPageSize}
                                                 totalRecords={detailTotal}
-                                                onPageChange={(newPage) => fetchDetail(selectedSubCategory, newPage, detailSearchInput)}
+                                                onPageChange={(newPage) => fetchDetail(selectedSubCategory, newPage, detailSearchInput, detailSortCol, detailSortOrder)}
                                             />
                                         </>
                                     ) : (
