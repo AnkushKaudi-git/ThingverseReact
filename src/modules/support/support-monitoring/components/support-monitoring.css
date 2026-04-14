@@ -273,6 +273,7 @@
     color: #333;
     font-weight: 600;
     border-bottom: 2px solid #eaeaea;
+    white-space: nowrap;
 }
 
 .custom-data-table td {

@@ -362,76 +362,86 @@ function SupportMonitoring() {
                     {activeConfig && (
                         <div className="category-view">
 
-                            {/* --- SIDE BY SIDE LAYOUT FOR SUMMARY AND CHART --- */}
-                            <div className="layout-side-by-side">
-                                {/* SUMMARY TABLE */}
-                                <div className="table-container">
-                                    <div className="table-controls">
-                                        <span className="record-count">Total Record(s): {summaryTotal}</span>
-                                        <div className="search-bar">
-                                            <input
-                                                type="text"
-                                                placeholder="Search..."
-                                                value={summarySearchInput}
-                                                onChange={(e) => setSummarySearchInput(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && fetchSummary(activeCategoryName, 0, summarySearchInput)}
-                                            />
-                                            <i className="search-icon">🔍</i>
-                                        </div>
-                                    </div>
+                            {/* --- DYNAMIC LAYOUT FOR SUMMARY AND CHART --- */}
+                            {(() => {
+                                // Determine if we should stack the layout (Chart top, Table bottom)
+                                const isStackedLayout = activeConfig.viewType !== 'master-detail' && activeConfig.hasChart;
 
-                                    {summaryData.length > 0 ? (
-                                        <>
-                                            <div className="table-responsive">
-                                                <table className="custom-data-table">
-                                                    <thead>
-                                                        <tr>
-                                                            {activeConfig.summaryColumns.map(col => (
-                                                                <th key={col.field}>{col.header}</th>
-                                                            ))}
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {summaryData.map((row, idx) => (
-                                                            <tr
-                                                                key={idx}
-                                                                onClick={() => handleMasterRowClick(row)}
-                                                                className={activeConfig.viewType === 'master-detail' ? 'clickable-row' : ''}
-                                                            >
-                                                                {activeConfig.summaryColumns.map(col => (
-                                                                    <td key={col.field}>
-                                                                        {formatCellValue(row[col.field])}
-                                                                    </td>
+                                // Store the chart in a variable so we can easily place it before OR after the table
+                                const chartNode = (activeConfig.hasChart && summaryData.length > 0) ? (
+                                    <div className="chart-container" style={isStackedLayout ? { width: '100%', flex: 'none', marginBottom: '40px' } : {}}>
+                                        <h3 className="chart-title">{activeConfig.title || activeCategoryName}</h3>
+                                        <CategoryChart config={activeConfig.chart} data={summaryData} />
+                                    </div>
+                                ) : null;
+
+                                return (
+                                    <div className={isStackedLayout ? "layout-stacked" : "layout-side-by-side"} style={isStackedLayout ? { display: 'flex', flexDirection: 'column' } : {}}>
+
+                                        {/* 1. If stacked, render the chart FIRST */}
+                                        {isStackedLayout && chartNode}
+
+                                        {/* 2. ALWAYS render the summary table */}
+                                        <div className="table-container" style={isStackedLayout ? { width: '100%', flex: 'none' } : {}}>
+                                            <div className="table-controls">
+                                                <span className="record-count">Total Record(s): {summaryTotal}</span>
+                                                <div className="search-bar">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search..."
+                                                        value={summarySearchInput}
+                                                        onChange={(e) => setSummarySearchInput(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && fetchSummary(activeCategoryName, 0, summarySearchInput)}
+                                                    />
+                                                    <i className="search-icon">🔍</i>
+                                                </div>
+                                            </div>
+
+                                            {summaryData.length > 0 ? (
+                                                <>
+                                                    <div className="table-responsive">
+                                                        <table className="custom-data-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    {activeConfig.summaryColumns.map(col => (
+                                                                        <th key={col.field}>{col.header}</th>
+                                                                    ))}
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {summaryData.map((row, idx) => (
+                                                                    <tr
+                                                                        key={idx}
+                                                                        onClick={() => handleMasterRowClick(row)}
+                                                                        className={activeConfig.viewType === 'master-detail' ? 'clickable-row' : ''}
+                                                                    >
+                                                                        {activeConfig.summaryColumns.map(col => (
+                                                                            <td key={col.field}>
+                                                                                {formatCellValue(row[col.field])}
+                                                                            </td>
+                                                                        ))}
+                                                                    </tr>
                                                                 ))}
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                            <Pagination
-                                                pageIndex={summaryPage}
-                                                pageSize={summaryPageSize}
-                                                totalRecords={summaryTotal}
-                                                onPageChange={(newPage) => fetchSummary(activeCategoryName, newPage, summarySearchInput)}
-                                            />
-                                        </>
-                                    ) : (
-                                        !isLoading && <p style={{ marginTop: '20px', color: '#666' }}>No data available.</p>
-                                    )}
-                                </div>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    <Pagination
+                                                        pageIndex={summaryPage}
+                                                        pageSize={summaryPageSize}
+                                                        totalRecords={summaryTotal}
+                                                        onPageChange={(newPage) => fetchSummary(activeCategoryName, newPage, summarySearchInput)}
+                                                    />
+                                                </>
+                                            ) : (
+                                                !isLoading && <p style={{ marginTop: '20px', color: '#666' }}>No data available.</p>
+                                            )}
+                                        </div>
 
-                                {/* CHART */}
-                                {activeConfig.hasChart && (
-                                    <div className="chart-container">
-                                        {summaryData.length > 0 ? (
-                                            <div>
-                                                <h3 className="chart-title">{activeConfig.title || activeCategoryName}</h3>
-                                                <CategoryChart config={activeConfig.chart} data={summaryData} />
-                                            </div>
-                                        ) : null}
+                                        {/* 3. If side-by-side (like master-detail), render the chart SECOND */}
+                                        {!isStackedLayout && chartNode}
                                     </div>
-                                )}
-                            </div>
+                                );
+                            })()}
 
                             {/* --- DETAIL TABLE BELOW --- */}
                             {activeConfig.viewType === 'master-detail' && selectedSubCategory && (
