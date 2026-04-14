@@ -240,7 +240,8 @@ export const CATEGORY_CONFIGS = {
             { field: 'TicketId', header: 'Ticket Id', sortable: true },
             { field: 'TicketStatusName', header: 'Status' },
             { field: 'TicketCategory', header: 'Category', sortable: true },
-            { field: 'CreatedOn', header: 'Created On', sortable: true }
+            { field: 'CreatedOn', header: 'Created On', sortable: true },
+            { field: 'Description', header: 'Description'}
         ]
     },
     "Verizon SIM Usage Import": {

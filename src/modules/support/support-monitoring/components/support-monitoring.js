@@ -41,6 +41,31 @@ const CategoryChart = ({ data, config }) => {
     const chartRef = useRef(null);
     const chartInstance = useRef(null);
 
+    // --- COLOR DICTIONARY ---
+    // Map specific field names from your config to hex colors
+    const STATUS_COLORS = {
+        'Succeeded': '#4CAF50',        // Green
+        'Completed': '#4CAF50',        // Green
+        'Ready': '#8BC34A',            // Light Green
+        'ProcessedDevices': '#4CAF50', // Green
+        
+        'Failed': '#F44336',           // Red
+        'FailedDevices': '#F44336',    // Red
+        'Error': '#D32F2F',            // Dark Red
+        
+        'Pending': '#FFC107',          // Amber/Yellow
+        'InProgress': '#FFC107',       // Blue
+        'Open': '#D32F2F',             // Light Blue
+        
+        'Unprocessable': '#9E9E9E',    // Grey
+        
+        'LitePortal': '#00BCD4',       // Cyan
+        'BackOfficePortal': '#9C27B0'  // Purple
+    };
+
+    // A fallback array of colors just in case a field isn't in the dictionary
+    const FALLBACK_COLORS = ['#5d4e99', '#FF9800', '#009688', '#E91E63', '#795548'];
+
     useEffect(() => {
         if (!chartRef.current || !data || data.length === 0) return;
 
@@ -57,7 +82,8 @@ const CategoryChart = ({ data, config }) => {
             datasets = config.stackedFields.map((field, idx) => ({
                 label: field,
                 data: data.map(row => Number(row[field] || 0)),
-                backgroundColor: idx === 0 ? "#F44336" : "#FFC107",
+                // Look up the color in the dictionary, use fallback if not found
+                backgroundColor: STATUS_COLORS[field] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length], 
                 borderWidth: 1,
                 maxBarThickness: MAX_BAR_WIDTH
             }));
@@ -65,7 +91,7 @@ const CategoryChart = ({ data, config }) => {
             datasets = [{
                 label: config.legendLabel || config.yLabel,
                 data: data.map(row => Number(row[config.valueFromAttributes] || 0)),
-                backgroundColor: "#5d4e99",
+                backgroundColor: "#5d4e99", // App primary color for single-bar charts
                 maxBarThickness: MAX_BAR_WIDTH
             }];
         }
@@ -94,7 +120,8 @@ const CategoryChart = ({ data, config }) => {
         });
 
         return () => { if (chartInstance.current) chartInstance.current.destroy(); };
-    }, [data, config]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data, config]); // STATUS_COLORS and FALLBACK_COLORS are defined inside, no need to add to deps
 
     return (
         <div style={{ height: '300px', marginBottom: '20px' }}>
@@ -367,6 +394,7 @@ function SupportMonitoring() {
                                 className={`status-tab ${activeTab === index ? 'active' : ''}`}
                                 style={{ '--legend-color': tab.legend }}
                                 onClick={() => handleTabClick(tab.category, index)}
+                                title={tab.category}
                             >
                                 <span className="tab-text">{tab.category}</span>
                             </button>
