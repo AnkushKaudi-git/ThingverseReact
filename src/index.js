@@ -13,7 +13,7 @@ const msalInstance = new PublicClientApplication(environment.msalConfig);
 // 1. Initialize first!
 msalInstance.initialize().then(() => {
   setMsalInstance(msalInstance);
-  
+
   const accounts = msalInstance.getAllAccounts();
   if (accounts.length > 0) {
     msalInstance.setActiveAccount(accounts[0]);
@@ -24,6 +24,11 @@ msalInstance.initialize().then(() => {
     if (event.eventType === EventType.LOGIN_SUCCESS && event.payload.account) {
       const account = event.payload.account;
       msalInstance.setActiveAccount(account);
+    }
+
+    // Clear the active account when they sign out
+    if (event.eventType === EventType.LOGOUT_SUCCESS) {
+      msalInstance.setActiveAccount(null);
     }
   });
 

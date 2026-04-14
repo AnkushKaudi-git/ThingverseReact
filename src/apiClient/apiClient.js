@@ -24,7 +24,8 @@ apiClient.interceptors.request.use(
             if (account) {
                 try {
                     const response = await msalInstance.acquireTokenSilent({
-                        scopes: environment.apiConfig.scopes
+                        scopes: environment.apiConfig.scopes,
+                        account: account
                     });
                     const accessToken = response.accessToken;
                     config.headers.Authorization = `Bearer ${accessToken}`;

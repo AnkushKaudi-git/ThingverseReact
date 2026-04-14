@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './navbar.css';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import menuItems from '../../constants/menuConfig.json';
+import { useMsal } from '@azure/msal-react';
 
 const NavbarItem = ({ item, isOpen, onToggle, closeMenu }) => {
     const location = useLocation();
@@ -56,6 +57,10 @@ const NavbarItem = ({ item, isOpen, onToggle, closeMenu }) => {
 const Navbar = ({ userName }) => {
     const [openMenu, setOpenMenu] = useState(null);
 
+    const { instance } = useMsal();
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const userMenuRef = useRef(null);
+
     const initials = userName
         ? userName.split(' ').map(n => n[0]).join('').toUpperCase()
         : 'U';
@@ -68,6 +73,22 @@ const Navbar = ({ userName }) => {
     const closeMenu = () => {
         setOpenMenu(null);
     }
+
+    const handleLogout = () => {
+        instance.logoutRedirect({
+            postLogoutRedirectUri: "/",
+        });
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+                setIsUserMenuOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     return (
         <header className="navbar">
@@ -96,7 +117,31 @@ const Navbar = ({ userName }) => {
                 </div>
                 <div className="navbar-icons">
                     <button className="icon-btn" title="Theme/Settings">🎨</button>
-                    <div className="user-avatar">{initials}</div>
+
+                    {/* --- NEW WRAPPER WITH POSITION: RELATIVE --- */}
+                    <div className="user-profile-wrapper" ref={userMenuRef} style={{ position: 'relative' }}>
+
+                        <div
+                            className="user-avatar"
+                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                            style={{ cursor: 'pointer' }}
+                            title="Account Settings"
+                        >
+                            {initials}
+                        </div>
+
+                        {isUserMenuOpen && (
+                            <div className="user-flyout">
+                                <button className="logout-btn" onClick={handleLogout}>
+                                    Profile
+                                </button>
+                                <button className="logout-btn" onClick={handleLogout}>
+                                    Sign Out
+                                </button>
+                            </div>
+                        )}
+
+                    </div>
                 </div>
             </div>
         </header>
