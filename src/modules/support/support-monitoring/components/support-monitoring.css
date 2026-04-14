@@ -1,0 +1,334 @@
+/* ================================
+   PAGE LAYOUT
+================================ */
+.page-container {
+    height: calc(100vh - 100px); 
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* Top filter bar */
+.filter-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+}
+
+/* Main layout (sidebar + content) */
+.main-layout {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+    overflow: hidden;
+    /* prevents whole page scroll */
+    min-height: 0;
+}
+
+/* ================================
+   SIDEBAR (TABS)
+================================ */
+.tabs-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 220px;
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 5px;
+    flex-shrink: 0;
+    scrollbar-width: thin;
+}
+
+.tabs-grid {
+    scrollbar-color: #ccc transparent;
+}
+
+.tabs-grid:hover {
+    scrollbar-color: #ccc transparent;
+}
+
+.tabs-grid::-webkit-scrollbar {
+    display: none;
+}
+
+/* ================================
+   TAB BUTTONS
+================================ */
+.status-tab {
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid var(--legend-color);
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    cursor: pointer;
+    width: 100%;
+    height: 30px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s, color 0.2s;
+    flex-shrink: 0;
+}
+
+/* 🔥 Text container (this is where ellipsis works) */
+.tab-text {
+    flex: 1;
+    min-width: 0;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    text-align: center;
+    /* or left if you prefer */
+}
+
+/* Hover + Active */
+.status-tab:hover,
+.status-tab.active {
+    background-color: var(--legend-color);
+    color: #000000;
+}
+
+/* ================================
+   CONTENT AREA
+================================ */
+.content-area {
+    flex: 1;
+    overflow: auto;
+    /* optional if content grows */
+}
+
+/* ================================
+   BUTTONS
+================================ */
+.btn-outline {
+    background-color: #ffffff;
+    color: #5d4e99;
+    border: 1px solid #5d4e99;
+    padding: 0 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    height: 30px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-outline:hover {
+    background-color: #f4f2ff;
+}
+
+.btn-solid {
+    background-color: #5d4e99;
+    color: #ffffff;
+    border: 1px solid #5d4e99;
+    padding: 0 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    height: 30px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-solid:hover {
+    background-color: #4a3c7c;
+}
+
+/* ================================
+   DATE INPUTS
+================================ */
+.date-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.date-input-group label {
+    font-size: 12px;
+    color: #333;
+}
+
+.date-input-group input[type="date"] {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0 10px;
+    font-size: 14px;
+    color: #333;
+    outline: none;
+    width: 170px;
+    height: 30px;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.date-input-group input[type="date"]:focus {
+    border-color: #5d4e99;
+}
+
+/* Calendar icon styling */
+.date-input-group input[type="date"]::-webkit-calendar-picker-indicator {
+    background-color: #5d4e99;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 0 3px 3px 0;
+    margin-right: -10px;
+
+    color: transparent;
+
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffffff"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 18px;
+}
+
+/* ================================
+   NEW LAYOUT & TABLE CONTROLS
+================================ */
+
+.layout-side-by-side {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+}
+
+.table-container {
+    flex: 1.2;
+    min-width: 0;
+}
+
+.chart-container {
+    flex: 0.8;
+    min-width: 0;
+    text-align: center;
+}
+
+.chart-title {
+    font-size: 18px;
+    color: #4a5568;
+    margin-bottom: 20px;
+}
+
+.table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.table-controls .record-count {
+    font-size: 14px;
+    color: #333;
+}
+
+.table-controls .search-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 2px 10px;
+    background: #fff;
+}
+
+.table-controls .search-bar input {
+    border: none;
+    outline: none;
+    padding: 6px;
+    font-size: 13px;
+    width: 150px;
+}
+
+.table-controls .search-bar .search-icon {
+    font-style: normal;
+    font-size: 14px;
+    color: #888;
+    margin-left: 5px;
+    cursor: pointer;
+}
+
+/* ================================
+   CUSTOM TABLES
+================================ */
+.table-responsive {
+    overflow-x: auto;
+    border-top: 1px solid #eaeaea;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.custom-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 13px;
+}
+
+.custom-data-table th {
+    padding: 12px 10px;
+    background-color: #f8f9fa;
+    color: #333;
+    font-weight: 600;
+    border-bottom: 2px solid #eaeaea;
+}
+
+.custom-data-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #eaeaea;
+    color: #444;
+}
+
+.clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.clickable-row:hover {
+    background-color: #f1f5f9;
+}
+
+/* ================================
+   PAGINATION
+================================ */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 15px;
+    align-items: center;
+}
+
+.pagination-controls button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #999;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 5px;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+    color: #5d4e99;
+}
+
+.pagination-controls button:disabled {
+    color: #e0e0e0;
+    cursor: not-allowed;
+}
+
+.pagination-controls .current-page {
+    background: #e6e0ff;
+    color: #5d4e99;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: bold;
+}

@@ -1,0 +1,35 @@
+/* login.css */
+.login-container {
+  text-align: center;
+  margin-top: 50px;
+  font-family: sans-serif;
+}
+
+.login-alert {
+  padding: 15px;
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.authenticated-box {
+  padding: 20px;
+  border: 1px solid green;
+  display: inline-block;
+}
+
+.unauthenticated-box {
+  padding: 20px;
+  border: 1px solid red;
+  display: inline-block;
+}
+
+.login-btn {
+  padding: 10px 20px;
+  cursor: pointer;
+}

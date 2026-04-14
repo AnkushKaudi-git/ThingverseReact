@@ -1,0 +1,35 @@
+.main-content-wrapper {
+    display: flex;
+    flex: 1;
+    /* Do NOT use overflow: hidden here if you want the flyout to be visible */
+}
+
+.page-body {
+    flex: 1;
+    overflow-y: auto;
+    /* Only the right-side content area should scroll */
+}
+
+/* Add these to layout.css */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    /* Crucial for keeping the navbar at top and sidebar full height */
+    width: 100vw;
+    overflow: hidden;
+}
+
+.main-content-wrapper {
+    display: flex;
+    flex: 1;
+    overflow: visible;
+    position: relative;
+}
+
+.page-body {
+    flex: 1;
+    background-color: #f4f7fe;
+    overflow-y: auto;
+    z-index: 1;
+}

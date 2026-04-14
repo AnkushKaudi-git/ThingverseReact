@@ -1,0 +1,42 @@
+[
+  {
+    "title": "Support",
+    "icon": "support-icon",
+    "children": [
+      {
+        "title": "Support Monitoring",
+        "path": "/support/support-monitoring"
+      },
+      {
+        "title": "Support Utilities",
+        "path": "/support/utilities"
+      },
+      {
+        "title": "External API",
+        "path": "/support/external-api"
+      }
+    ]
+  },
+  {
+    "title": "Fulfillment Process",
+    "icon": "support-icon",
+    "children": [
+      {
+        "title": "Load Subscription Types",
+        "path": "/subscription/load-subscription-types"
+      },
+      {
+        "title": "Package Subscription",
+        "path": "/subscription/package-subscription"
+      },
+      {
+        "title": "Ship Subscription",
+        "path": "/support/ship-suscription"
+      },
+      {
+        "title": "Shipment List",
+        "path": "/support/shipment-list"
+      }
+    ]
+  }
+]

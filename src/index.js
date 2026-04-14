@@ -1,17 +1,41 @@
-import React from 'react';
+import React from 'react'; // Don't forget to import React
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { PublicClientApplication, EventType } from "@azure/msal-browser";
+import { MsalProvider } from "@azure/msal-react";
+import { environment } from "../src/environments/environment";
+import { setMsalInstance } from './apiClient/apiClient';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+const msalInstance = new PublicClientApplication(environment.msalConfig);
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+// 1. Initialize first!
+msalInstance.initialize().then(() => {
+  setMsalInstance(msalInstance);
+  
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    msalInstance.setActiveAccount(accounts[0]);
+  }
+
+  // 3. Register the callback
+  msalInstance.addEventCallback((event) => {
+    if (event.eventType === EventType.LOGIN_SUCCESS && event.payload.account) {
+      const account = event.payload.account;
+      msalInstance.setActiveAccount(account);
+    }
+  });
+
+  // 4. Finally, render the app
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(
+    <MsalProvider instance={msalInstance}>
+      <App />
+    </MsalProvider>
+  );
+}).catch(e => {
+  console.error("MSAL initialization failed: ", e);
+});
+
 reportWebVitals();

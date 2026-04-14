@@ -1,38 +1,30 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* Ensure the app takes up the full screen height */
+.app-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  height: 100vh;
+  overflow: hidden;
 }
 
-.App-link {
-  color: #61dafb;
+.main-content-wrapper {
+  display: flex;
+  flex: 1;
+  /* Takes up remaining height after Navbar */
+  overflow: hidden;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.page-body {
+  flex: 1;
+  padding: 20px;
+  background-color: #f4f7fe;
+  /* Light grey background for content */
+  overflow-y: auto;
+  /* Only the content area should scroll */
+}
+
+.sidebar {
+  width: 260px;
+  height: 100%;
+  overflow-y: auto;
+  /* Sidebar scrolls independently if menu is long */
 }
