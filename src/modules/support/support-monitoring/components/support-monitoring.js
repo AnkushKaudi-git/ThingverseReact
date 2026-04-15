@@ -1,18 +1,26 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import './support-monitoring.css'
-import { getSupportMonitoringTabs } from "../services/support-monitoring.service";
 import { CATEGORY_CONFIGS } from '../constants/support-monitoring-configs';
 import { Chart } from "chart.js/auto";
 import { formatUtcToLocal } from "../../../../services/datetime/datetime.service";
 import Spinner from "../../../../components/spinner/spinner";
 
-const getTodayString = () => {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-};
+// Redux actions and thunks
+import {
+    setStartDate,
+    setEndDate,
+    setToday,
+    setActiveTab,
+    setSummarySearchInput,
+    setDetailSearchInput,
+    resetSummaryState,
+    resetDetailState,
+    setSelectedSubCategory,
+    fetchTabs,
+    fetchSummary,
+    fetchDetail,
+} from '../../../../store/slices/supportMonitoringSlice';
 
 const formatCellValue = (value) => {
     if (value === undefined || value === null) return '-';
@@ -143,120 +151,91 @@ const SortIcon = ({ sortColumn, sortOrder, field }) => {
 };
 
 function SupportMonitoring() {
-    const [startDate, setStartDate] = useState(getTodayString());
-    const [endDate, setEndDate] = useState(getTodayString());
+    const dispatch = useDispatch();
 
-    const [tabs, setTabs] = useState([]);
-    const [activeTab, setActiveTab] = useState(null);
+    // --- Read all state from Redux store ---
+    const {
+        startDate,
+        endDate,
+        tabs,
+        activeTab,
+        isLoading,
+        summary,
+        detail,
+    } = useSelector((state) => state.supportMonitoring);
 
-    const [isLoading, setIsLoading] = useState(false);
-    const [isDetailLoading, setIsDetailLoading] = useState(false);
-    const [error, setError] = useState(null);
+    // Derived values
+    const activeCategoryName = activeTab !== null && tabs[activeTab] ? tabs[activeTab].category : null;
+    const activeConfig = activeCategoryName ? CATEGORY_CONFIGS[activeCategoryName] : null;
 
-    // --- SUMMARY STATE ---
-    const [summaryData, setSummaryData] = useState([]);
-    const [summaryTotal, setSummaryTotal] = useState(0);
-    const [summaryPage, setSummaryPage] = useState(0);
-    const [summaryPageSize] = useState(10); 
-    const [summarySearchInput, setSummarySearchInput] = useState('');
-    const [summarySortCol, setSummarySortCol] = useState('');
-    const [summarySortOrder, setSummarySortOrder] = useState('');
-
-    // --- DETAIL STATE ---
-    const [selectedSubCategory, setSelectedSubCategory] = useState(null);
-    const [detailData, setDetailData] = useState([]);
-    const [detailTotal, setDetailTotal] = useState(0);
-    const [detailPage, setDetailPage] = useState(0);
-    const [detailPageSize] = useState(10);
-    const [detailSearchInput, setDetailSearchInput] = useState('');
-    const [detailSortCol, setDetailSortCol] = useState('');
-    const [detailSortOrder, setDetailSortOrder] = useState('');
-
-    const flattenRowAttributes = (rows) => {
-        return rows.map(row => {
-            let attrs = {};
-            try { if (row.attributes) attrs = JSON.parse(row.attributes); } catch (e) { }
-            return { ...row, ...attrs };
-        });
-    };
-
-    const fetchSupportMonitoringTabs = async () => {
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            const payload = {
-                pageIndex: 0,
-                pageSize: 21,
-                startDate: startDate,
-                endDate: endDate
-            }
-
-            const data = await getSupportMonitoringTabs(payload);
-            setTabs(data);
-            return data;
-        } catch (err) {
-            console.error("Error fetching support monitoring tabs: ", err);
-            setError("Failed to load support monitoring tabs. Please try again.");
-            return null;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
+    // --- Tab click handler ---
     const handleTabClick = async (categoryName, index) => {
-        setActiveTab(index);
-        setSelectedSubCategory(null);
-        setSummaryData([]);
-        setSummarySearchInput('');
-        setSummarySortCol('');
-        setSummarySortOrder('');
+        dispatch(setActiveTab(index));
+        dispatch(resetSummaryState());
 
-        await fetchSummary(categoryName, 0, '', '', '');
+        dispatch(fetchSummary({
+            categoryName,
+            pageIndex: 0,
+            searchText: '',
+            sortColumn: '',
+            sortOrder: '',
+        }));
     };
 
-    const handleMasterRowClick = async (row) => {
+    // --- Master row click handler (for master-detail views) ---
+    const handleMasterRowClick = (row) => {
         const categoryName = tabs[activeTab].category;
         const config = CATEGORY_CONFIGS[categoryName];
 
         if (!config || config.viewType !== 'master-detail' || !config.detailLoaderFn) return;
 
-        setSelectedSubCategory(row.metricName);
-        setDetailSearchInput(''); 
-        setDetailSortCol('');
-        setDetailSortOrder('');
+        dispatch(resetDetailState());
+        dispatch(setSelectedSubCategory(row.metricName));
 
-        await fetchDetail(row.metricName, 0, '', '', '');
+        dispatch(fetchDetail({
+            categoryName,
+            subCategory: row.metricName,
+            pageIndex: 0,
+            searchText: '',
+            sortColumn: '',
+            sortOrder: '',
+        }));
     };
 
-    const activeCategoryName = activeTab !== null ? tabs[activeTab].category : null;
-    const activeConfig = activeCategoryName ? CATEGORY_CONFIGS[activeCategoryName] : null;
+    // --- Apply Filter (re-fetch tabs and current category) ---
+    const handleApplyFilter = async () => {
+        const resultAction = await dispatch(fetchTabs());
 
-    const fetchData = async () => {
-        const data = await fetchSupportMonitoringTabs();
-        const currentCategory = activeTab !== null && tabs[activeTab] ? tabs[activeTab].category : null;
+        if (fetchTabs.fulfilled.match(resultAction)) {
+            const data = resultAction.payload;
+            if (data && data.length > 0) {
+                const currentCategory = activeTab !== null && tabs[activeTab] ? tabs[activeTab].category : null;
 
-        if (data && data.length > 0) {
-            if (currentCategory) {
-                const newIndex = data.findIndex(t => t.category === currentCategory);
-                const indexToSelect = newIndex !== -1 ? newIndex : 0; 
-                handleTabClick(data[indexToSelect].category, indexToSelect);
-            } else {
-                const defaultIndex = data.findIndex(t => t.category === "Application Errors");
-                const indexToSelect = defaultIndex !== -1 ? defaultIndex : 0;
-                handleTabClick(data[indexToSelect].category, indexToSelect);
+                if (currentCategory) {
+                    const newIndex = data.findIndex(t => t.category === currentCategory);
+                    const indexToSelect = newIndex !== -1 ? newIndex : 0;
+                    handleTabClick(data[indexToSelect].category, indexToSelect);
+                } else {
+                    const defaultIndex = data.findIndex(t => t.category === "Application Errors");
+                    const indexToSelect = defaultIndex !== -1 ? defaultIndex : 0;
+                    handleTabClick(data[indexToSelect].category, indexToSelect);
+                }
             }
         }
-    }
+    };
 
+    // --- Initial load ---
     useEffect(() => {
         const loadInitialData = async () => {
-            const data = await fetchSupportMonitoringTabs();
+            const resultAction = await dispatch(fetchTabs());
 
-            if (data && data.length > 0) {
-                const defaultIndex = data.findIndex(t => t.category === "Application Errors");
-                const indexToSelect = defaultIndex !== -1 ? defaultIndex : 0;
-                handleTabClick(data[indexToSelect].category, indexToSelect);
+            if (fetchTabs.fulfilled.match(resultAction)) {
+                const data = resultAction.payload;
+                if (data && data.length > 0) {
+                    const defaultIndex = data.findIndex(t => t.category === "Application Errors");
+                    const indexToSelect = defaultIndex !== -1 ? defaultIndex : 0;
+                    handleTabClick(data[indexToSelect].category, indexToSelect);
+                }
             }
         };
 
@@ -264,123 +243,56 @@ function SupportMonitoring() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const onStartDateChange = (date) => setStartDate(date);
-    const onEndDateChange = (date) => setEndDate(date);
-    
-    const setToday = () => {
-        const todayStr = getTodayString();
-        setStartDate(todayStr);
-        setEndDate(todayStr);
-    }
-
-    // --- SUMMARY FETCH & SORT ---
-    const fetchSummary = async (categoryName, pageIdx, searchTxt, sortCol = summarySortCol, sortOrd = summarySortOrder) => {
-        setIsLoading(true);
-        setError(null);
-        const config = CATEGORY_CONFIGS[categoryName];
-
-        if (!config || !config.summaryLoaderFn) {
-            setIsLoading(false);
-            return;
-        }
-
-        try {
-            const payload = {
-                pageIndex: pageIdx,
-                pageSize: summaryPageSize,
-                sortColumn: sortCol,
-                sortOrder: sortOrd,
-                searchText: searchTxt,
-                startDate,
-                endDate
-            };
-            const res = await config.summaryLoaderFn(payload);
-
-            const dataArr = res.data ? (typeof res.data === 'string' ? JSON.parse(res.data) : res.data) : (Array.isArray(res) ? res : []);
-            const total = res.totalRecords || res.totalRows || (dataArr[0] && dataArr[0].totalRows) || dataArr.length || 0;
-
-            setSummaryData(flattenRowAttributes(dataArr));
-            setSummaryTotal(total);
-            setSummaryPage(pageIdx);
-            setSummarySortCol(sortCol);
-            setSummarySortOrder(sortOrd);
-        } catch (err) {
-            console.error(`Error fetching summary for ${categoryName}: `, err);
-            setError(`Failed to load data.`);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
+    // --- Summary sort handler ---
     const handleSummarySort = (field) => {
         let newOrder = 'asc';
-        if (summarySortCol === field) {
-            if (summarySortOrder === 'asc') newOrder = 'desc';
-            else if (summarySortOrder === 'desc') newOrder = '';
+        if (summary.sortColumn === field) {
+            if (summary.sortOrder === 'asc') newOrder = 'desc';
+            else if (summary.sortOrder === 'desc') newOrder = '';
         }
-        fetchSummary(activeCategoryName, 0, summarySearchInput, field, newOrder);
+        dispatch(fetchSummary({
+            categoryName: activeCategoryName,
+            pageIndex: 0,
+            searchText: summary.searchInput,
+            sortColumn: field,
+            sortOrder: newOrder,
+        }));
     };
 
-    // --- DETAIL FETCH & SORT ---
-    const fetchDetail = async (subCategory, pageIdx, searchTxt, sortCol = detailSortCol, sortOrd = detailSortOrder) => {
-        const categoryName = tabs[activeTab].category;
-        const config = CATEGORY_CONFIGS[categoryName];
-        if (!config || !config.detailLoaderFn) return;
-
-        setIsDetailLoading(true);
-        try {
-            const payload = {
-                pageIndex: pageIdx,
-                pageSize: detailPageSize,
-                sortColumn: sortCol,
-                sortOrder: sortOrd,
-                searchText: searchTxt,
-                startDate,
-                endDate
-            };
-            const res = await config.detailLoaderFn(payload, subCategory);
-
-            const dataArr = res.data ? (typeof res.data === 'string' ? JSON.parse(res.data) : res.data) : (Array.isArray(res) ? res : []);
-            const total = res.totalRecords || res.totalRows || (dataArr[0] && dataArr[0].totalRows) || dataArr.length || 0;
-
-            setDetailData(flattenRowAttributes(dataArr));
-            setDetailTotal(total);
-            setDetailPage(pageIdx);
-            setDetailSortCol(sortCol);
-            setDetailSortOrder(sortOrd);
-        } catch (err) {
-            console.error(`Error fetching detail for ${subCategory}: `, err);
-        } finally {
-            setIsDetailLoading(false);
-        }
-    };
-
+    // --- Detail sort handler ---
     const handleDetailSort = (field) => {
         let newOrder = 'asc';
-        if (detailSortCol === field) {
-            if (detailSortOrder === 'asc') newOrder = 'desc';
-            else if (detailSortOrder === 'desc') newOrder = '';
+        if (detail.sortColumn === field) {
+            if (detail.sortOrder === 'asc') newOrder = 'desc';
+            else if (detail.sortOrder === 'desc') newOrder = '';
         }
-        fetchDetail(selectedSubCategory, 0, detailSearchInput, field, newOrder);
+        dispatch(fetchDetail({
+            categoryName: activeCategoryName,
+            subCategory: detail.selectedSubCategory,
+            pageIndex: 0,
+            searchText: detail.searchInput,
+            sortColumn: field,
+            sortOrder: newOrder,
+        }));
     };
 
 
     return (
         <div className="page-container">
             <div className="filter-bar">
-                <button className="btn-outline" onClick={setToday}>Today</button>
+                <button className="btn-outline" onClick={() => dispatch(setToday())}>Today</button>
 
                 <div className="date-input-group">
                     <label>Start Date</label>
-                    <input type="date" value={startDate} onChange={(e) => onStartDateChange(e.target.value)} />
+                    <input type="date" value={startDate} onChange={(e) => dispatch(setStartDate(e.target.value))} />
                 </div>
 
                 <div className="date-input-group">
                     <label>End Date</label>
-                    <input type="date" value={endDate} onChange={(e) => onEndDateChange(e.target.value)} />
+                    <input type="date" value={endDate} onChange={(e) => dispatch(setEndDate(e.target.value))} />
                 </div>
 
-                <button className="btn-solid" onClick={fetchData} disabled={isLoading}>
+                <button className="btn-solid" onClick={handleApplyFilter} disabled={isLoading}>
                     Apply Filter
                 </button>
             </div>
@@ -411,10 +323,10 @@ function SupportMonitoring() {
                         <div className="category-view">
                             {(() => {
                                 const isStackedLayout = activeConfig.viewType !== 'master-detail' && activeConfig.hasChart;
-                                const chartNode = (activeConfig.hasChart && summaryData.length > 0) ? (
+                                const chartNode = (activeConfig.hasChart && summary.data.length > 0) ? (
                                     <div className="chart-container" style={isStackedLayout ? { width: '100%', flex: 'none', marginBottom: '40px' } : {}}>
                                         <h3 className="chart-title">{activeConfig.title || activeCategoryName}</h3>
-                                        <CategoryChart config={activeConfig.chart} data={summaryData} />
+                                        <CategoryChart config={activeConfig.chart} data={summary.data} />
                                     </div>
                                 ) : null;
 
@@ -425,20 +337,26 @@ function SupportMonitoring() {
 
                                         <div className="table-container" style={isStackedLayout ? { width: '100%', flex: 'none' } : {}}>
                                             <div className="table-controls">
-                                                <span className="record-count">Total Record(s): {summaryTotal}</span>
+                                                <span className="record-count">Total Record(s): {summary.total}</span>
                                                 <div className="search-bar">
                                                     <input
                                                         type="text"
                                                         placeholder="Search..."
-                                                        value={summarySearchInput}
-                                                        onChange={(e) => setSummarySearchInput(e.target.value)}
-                                                        onKeyDown={(e) => e.key === 'Enter' && fetchSummary(activeCategoryName, 0, summarySearchInput, summarySortCol, summarySortOrder)}
+                                                        value={summary.searchInput}
+                                                        onChange={(e) => dispatch(setSummarySearchInput(e.target.value))}
+                                                        onKeyDown={(e) => e.key === 'Enter' && dispatch(fetchSummary({
+                                                            categoryName: activeCategoryName,
+                                                            pageIndex: 0,
+                                                            searchText: summary.searchInput,
+                                                            sortColumn: summary.sortColumn,
+                                                            sortOrder: summary.sortOrder,
+                                                        }))}
                                                     />
                                                     <i className="search-icon">🔍</i>
                                                 </div>
                                             </div>
 
-                                            {summaryData.length > 0 ? (
+                                            {summary.data.length > 0 ? (
                                                 <>
                                                     <div className="table-responsive">
                                                         <table className="custom-data-table">
@@ -451,13 +369,13 @@ function SupportMonitoring() {
                                                                             style={{ cursor: col.sortable ? 'pointer' : 'default', userSelect: 'none' }}
                                                                         >
                                                                             {col.header}
-                                                                            {col.sortable && <SortIcon sortColumn={summarySortCol} sortOrder={summarySortOrder} field={col.field} />}
+                                                                            {col.sortable && <SortIcon sortColumn={summary.sortColumn} sortOrder={summary.sortOrder} field={col.field} />}
                                                                         </th>
                                                                     ))}
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
-                                                                {summaryData.map((row, idx) => (
+                                                                {summary.data.map((row, idx) => (
                                                                     <tr
                                                                         key={idx}
                                                                         onClick={() => handleMasterRowClick(row)}
@@ -474,10 +392,16 @@ function SupportMonitoring() {
                                                         </table>
                                                     </div>
                                                     <Pagination
-                                                        pageIndex={summaryPage}
-                                                        pageSize={summaryPageSize}
-                                                        totalRecords={summaryTotal}
-                                                        onPageChange={(newPage) => fetchSummary(activeCategoryName, newPage, summarySearchInput, summarySortCol, summarySortOrder)}
+                                                        pageIndex={summary.page}
+                                                        pageSize={summary.pageSize}
+                                                        totalRecords={summary.total}
+                                                        onPageChange={(newPage) => dispatch(fetchSummary({
+                                                            categoryName: activeCategoryName,
+                                                            pageIndex: newPage,
+                                                            searchText: summary.searchInput,
+                                                            sortColumn: summary.sortColumn,
+                                                            sortOrder: summary.sortOrder,
+                                                        }))}
                                                     />
                                                 </>
                                             ) : (
@@ -491,25 +415,32 @@ function SupportMonitoring() {
                             })()}
 
                             {/* --- DETAIL TABLE BELOW --- */}
-                            {activeConfig.viewType === 'master-detail' && selectedSubCategory && (
+                            {activeConfig.viewType === 'master-detail' && detail.selectedSubCategory && (
                                 <div className="detail-section" style={{ marginTop: '50px' }}>
                                     <div className="table-controls">
-                                        <span className="record-count">Total Record(s): {detailTotal}</span>
+                                        <span className="record-count">Total Record(s): {detail.total}</span>
                                         <div className="search-bar">
                                             <input
                                                 type="text"
                                                 placeholder="Search..."
-                                                value={detailSearchInput}
-                                                onChange={(e) => setDetailSearchInput(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && fetchDetail(selectedSubCategory, 0, detailSearchInput, detailSortCol, detailSortOrder)}
+                                                value={detail.searchInput}
+                                                onChange={(e) => dispatch(setDetailSearchInput(e.target.value))}
+                                                onKeyDown={(e) => e.key === 'Enter' && dispatch(fetchDetail({
+                                                    categoryName: activeCategoryName,
+                                                    subCategory: detail.selectedSubCategory,
+                                                    pageIndex: 0,
+                                                    searchText: detail.searchInput,
+                                                    sortColumn: detail.sortColumn,
+                                                    sortOrder: detail.sortOrder,
+                                                }))}
                                             />
                                             <i className="search-icon">🔍</i>
                                         </div>
                                     </div>
 
-                                    {isDetailLoading ? (
+                                    {detail.isLoading ? (
                                         <p style={{ marginTop: '20px', color: '#666' }}>Loading details...</p>
-                                    ) : detailData.length > 0 ? (
+                                    ) : detail.data.length > 0 ? (
                                         <>
                                             <div className="table-responsive">
                                                 <table className="custom-data-table">
@@ -522,13 +453,13 @@ function SupportMonitoring() {
                                                                     style={{ cursor: col.sortable ? 'pointer' : 'default', userSelect: 'none' }}
                                                                 >
                                                                     {col.header}
-                                                                    {col.sortable && <SortIcon sortColumn={detailSortCol} sortOrder={detailSortOrder} field={col.field} />}
+                                                                    {col.sortable && <SortIcon sortColumn={detail.sortColumn} sortOrder={detail.sortOrder} field={col.field} />}
                                                                 </th>
                                                             ))}
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {detailData.map((row, idx) => (
+                                                        {detail.data.map((row, idx) => (
                                                             <tr key={idx}>
                                                                 {activeConfig.detailColumns.map(col => (
                                                                     <td key={col.field}>
@@ -541,10 +472,17 @@ function SupportMonitoring() {
                                                 </table>
                                             </div>
                                             <Pagination
-                                                pageIndex={detailPage}
-                                                pageSize={detailPageSize}
-                                                totalRecords={detailTotal}
-                                                onPageChange={(newPage) => fetchDetail(selectedSubCategory, newPage, detailSearchInput, detailSortCol, detailSortOrder)}
+                                                pageIndex={detail.page}
+                                                pageSize={detail.pageSize}
+                                                totalRecords={detail.total}
+                                                onPageChange={(newPage) => dispatch(fetchDetail({
+                                                    categoryName: activeCategoryName,
+                                                    subCategory: detail.selectedSubCategory,
+                                                    pageIndex: newPage,
+                                                    searchText: detail.searchInput,
+                                                    sortColumn: detail.sortColumn,
+                                                    sortOrder: detail.sortOrder,
+                                                }))}
                                             />
                                         </>
                                     ) : (
