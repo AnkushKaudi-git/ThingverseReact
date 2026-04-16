@@ -56,17 +56,17 @@ const CategoryChart = ({ data, config }) => {
         'Completed': '#4CAF50',        // Green
         'Ready': '#8BC34A',            // Light Green
         'ProcessedDevices': '#4CAF50', // Green
-        
+
         'Failed': '#F44336',           // Red
         'FailedDevices': '#F44336',    // Red
         'Error': '#D32F2F',            // Dark Red
-        
+
         'Pending': '#FFC107',          // Amber/Yellow
         'InProgress': '#FFC107',       // Blue
         'Open': '#D32F2F',             // Light Blue
-        
+
         'Unprocessable': '#9E9E9E',    // Grey
-        
+
         'LitePortal': '#00BCD4',       // Cyan
         'BackOfficePortal': '#9C27B0'  // Purple
     };
@@ -91,7 +91,7 @@ const CategoryChart = ({ data, config }) => {
                 label: field,
                 data: data.map(row => Number(row[field] || 0)),
                 // Look up the color in the dictionary, use fallback if not found
-                backgroundColor: STATUS_COLORS[field] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length], 
+                backgroundColor: STATUS_COLORS[field] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length],
                 borderWidth: 1,
                 maxBarThickness: MAX_BAR_WIDTH
             }));
@@ -128,7 +128,7 @@ const CategoryChart = ({ data, config }) => {
         });
 
         return () => { if (chartInstance.current) chartInstance.current.destroy(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data, config]); // STATUS_COLORS and FALLBACK_COLORS are defined inside, no need to add to deps
 
     return (
@@ -240,7 +240,7 @@ function SupportMonitoring() {
         };
 
         loadInitialData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // --- Summary sort handler ---
@@ -356,57 +356,59 @@ function SupportMonitoring() {
                                                 </div>
                                             </div>
 
-                                            {summary.data.length > 0 ? (
-                                                <>
-                                                    <div className="table-responsive">
-                                                        <table className="custom-data-table">
-                                                            <thead>
-                                                                <tr>
-                                                                    {activeConfig.summaryColumns.map(col => (
-                                                                        <th 
-                                                                            key={col.field}
-                                                                            onClick={() => col.sortable ? handleSummarySort(col.field) : null}
-                                                                            style={{ cursor: col.sortable ? 'pointer' : 'default', userSelect: 'none' }}
-                                                                        >
-                                                                            {col.header}
-                                                                            {col.sortable && <SortIcon sortColumn={summary.sortColumn} sortOrder={summary.sortOrder} field={col.field} />}
-                                                                        </th>
-                                                                    ))}
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {summary.data.map((row, idx) => (
-                                                                    <tr
-                                                                        key={idx}
-                                                                        onClick={() => handleMasterRowClick(row)}
-                                                                        className={activeConfig.viewType === 'master-detail' ? 'clickable-row' : ''}
-                                                                    >
+                                            <Spinner isLoading={summary.isLoading}>
+                                                {summary.data.length > 0 ? (
+                                                    <>
+                                                        <div className="table-responsive">
+                                                            <table className="custom-data-table">
+                                                                <thead>
+                                                                    <tr>
                                                                         {activeConfig.summaryColumns.map(col => (
-                                                                            <td key={col.field}>
-                                                                                {formatCellValue(row[col.field])}
-                                                                            </td>
+                                                                            <th
+                                                                                key={col.field}
+                                                                                onClick={() => col.sortable ? handleSummarySort(col.field) : null}
+                                                                                style={{ cursor: col.sortable ? 'pointer' : 'default', userSelect: 'none' }}
+                                                                            >
+                                                                                {col.header}
+                                                                                {col.sortable && <SortIcon sortColumn={summary.sortColumn} sortOrder={summary.sortOrder} field={col.field} />}
+                                                                            </th>
                                                                         ))}
                                                                     </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                    <Pagination
-                                                        pageIndex={summary.page}
-                                                        pageSize={summary.pageSize}
-                                                        totalRecords={summary.total}
-                                                        onPageChange={(newPage) => dispatch(fetchSummary({
-                                                            categoryName: activeCategoryName,
-                                                            pageIndex: newPage,
-                                                            searchText: summary.searchInput,
-                                                            sortColumn: summary.sortColumn,
-                                                            sortOrder: summary.sortOrder,
-                                                        }))}
-                                                    />
-                                                </>
-                                            ) : (
-                                                !isLoading && <p style={{ marginTop: '20px', color: '#666' }}>No data available.</p>
-                                            )}
+                                                                </thead>
+                                                                <tbody>
+                                                                    {summary.data.map((row, idx) => (
+                                                                        <tr
+                                                                            key={idx}
+                                                                            onClick={() => handleMasterRowClick(row)}
+                                                                            className={activeConfig.viewType === 'master-detail' ? 'clickable-row' : ''}
+                                                                        >
+                                                                            {activeConfig.summaryColumns.map(col => (
+                                                                                <td key={col.field}>
+                                                                                    {formatCellValue(row[col.field])}
+                                                                                </td>
+                                                                            ))}
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                        <Pagination
+                                                            pageIndex={summary.page}
+                                                            pageSize={summary.pageSize}
+                                                            totalRecords={summary.total}
+                                                            onPageChange={(newPage) => dispatch(fetchSummary({
+                                                                categoryName: activeCategoryName,
+                                                                pageIndex: newPage,
+                                                                searchText: summary.searchInput,
+                                                                sortColumn: summary.sortColumn,
+                                                                sortOrder: summary.sortOrder,
+                                                            }))}
+                                                        />
+                                                    </>
+                                                ) : (
+                                                    !isLoading && <p style={{ marginTop: '20px', color: '#666' }}>No data available.</p>
+                                                )}
+                                            </Spinner>
                                         </div>
 
                                         {!isStackedLayout && chartNode}
@@ -447,7 +449,7 @@ function SupportMonitoring() {
                                                     <thead>
                                                         <tr>
                                                             {activeConfig.detailColumns.map(col => (
-                                                                <th 
+                                                                <th
                                                                     key={col.field}
                                                                     onClick={() => col.sortable ? handleDetailSort(col.field) : null}
                                                                     style={{ cursor: col.sortable ? 'pointer' : 'default', userSelect: 'none' }}
